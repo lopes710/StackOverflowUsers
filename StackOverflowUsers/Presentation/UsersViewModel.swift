@@ -21,7 +21,7 @@ enum UsersViewState: Equatable {
 
 final class UsersViewModel {
     private let repository: UsersRepositoryProtocol
-
+    
     private(set) var state: UsersViewState = .idle {
         didSet {
             onStateChange?(state)
@@ -32,10 +32,10 @@ final class UsersViewModel {
         guard case let .loaded(users) = state else {
             return []
         }
-
+        
         return users
     }
-
+    
     var onStateChange: ((UsersViewState) -> Void)?
     
     // MARK: - Init
@@ -43,15 +43,17 @@ final class UsersViewModel {
     init(repository: UsersRepositoryProtocol = UsersRepository()) {
         self.repository = repository
     }
-    
-    // MARK: - Public
-    
+}
+
+// MARK: - Public
+
+extension UsersViewModel {
     func loadUsers() async {
         state = .loading
-
+        
         do {
             let users = try await repository.fetchTopUsers()
-
+            
             if users.isEmpty {
                 state = .empty(message: Constants.noUsersMessage)
             } else {
@@ -61,29 +63,43 @@ final class UsersViewModel {
             state = .empty(message: Constants.loadUsersErrorMessage)
         }
     }
+    
+    func toggleFollow(userID: Int) {
+        guard let user = users.first(where: { $0.id == userID }) else {
+            return
+        }
+        
+        if user.isFollowed {
+            unfollow(userID: userID)
+        } else {
+            follow(userID: userID)
+        }
+    }
+}
 
+// MARK: - Private
+
+private extension UsersViewModel {
     func follow(userID: Int) {
         repository.follow(userID: userID)
         updateFollowState(userID: userID, isFollowed: true)
     }
-
+    
     func unfollow(userID: Int) {
         repository.unfollow(userID: userID)
         updateFollowState(userID: userID, isFollowed: false)
     }
-
-    // MARK: - Private
     
-    private func updateFollowState(userID: Int, isFollowed: Bool) {
+    func updateFollowState(userID: Int, isFollowed: Bool) {
         guard case let .loaded(users) = state else {
             return
         }
-
+        
         let updatedUsers = users.map { user in
             guard user.id == userID else {
                 return user
             }
-
+            
             return User(
                 id: user.id,
                 displayName: user.displayName,
@@ -93,8 +109,7 @@ final class UsersViewModel {
                 isFollowed: isFollowed
             )
         }
-
+        
         state = .loaded(updatedUsers)
     }
 }
-

@@ -124,13 +124,13 @@ final class UserTableViewCell: UITableViewCell {
 
     // MARK: - Public
 
-    func configure(with user: User) {
+    func configure(with user: User, imageLoader: ImageLoader) {
         nameLabel.text = user.displayName
         reputationLabel.text = "\(Constants.reputationPrefix) \(user.reputation)"
         followIndicatorLabel.text = user.isFollowed ? Constants.followingText : Constants.emptyFollowingText
         followButton.setTitle(user.isFollowed ? Constants.unfollowText : Constants.followText, for: .normal)
 
-        loadImage(from: user.profileImageURL)
+        loadImage(from: user.profileImageURL, imageLoader: imageLoader)
     }
 
     // MARK: - Private
@@ -164,25 +164,19 @@ final class UserTableViewCell: UITableViewCell {
             followButton.widthAnchor.constraint(equalToConstant: Constants.followButtonWidth)
         ])
     }
-
-    private func loadImage(from url: URL?) {
-        guard let url else {
-            return
-        }
-
+    
+    private func loadImage(from url: URL?, imageLoader: ImageLoader) {
+        avatarImageView.image = UIImage(systemName: Constants.placeholderImageName)
+        
         Task { [weak self] in
-            do {
-                let (data, _) = try await URLSession.shared.data(from: url)
-
-                guard let image = UIImage(data: data) else {
+            let image = await imageLoader.loadImage(from: url)
+            
+            await MainActor.run {
+                guard let image else {
                     return
                 }
-
-                await MainActor.run {
-                    self?.avatarImageView.image = image
-                }
-            } catch {
-                // Placeholder image.
+                
+                self?.avatarImageView.image = image
             }
         }
     }
