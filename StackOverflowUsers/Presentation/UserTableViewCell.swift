@@ -166,8 +166,6 @@ final class UserTableViewCell: UITableViewCell {
     }
     
     private func loadImage(from url: URL?, imageLoader: ImageLoader) {
-        avatarImageView.image = UIImage(systemName: Constants.placeholderImageName)
-        
         Task { [weak self] in
             let image = await imageLoader.loadImage(from: url)
             

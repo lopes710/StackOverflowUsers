@@ -30,9 +30,7 @@ final class UsersRepository: UsersRepositoryProtocol {
         let response: UsersResponseDTO = try await networkClient.request(request)
 
         return response.items.map { userDTO in
-            userDTO.toDomain(
-                isFollowed: followedUsersStore.isFollowing(userID: userDTO.userId)
-            )
+            userDTO.toDomain(isFollowed: followedUsersStore.isFollowing(userID: userDTO.userId))
         }
     }
 
